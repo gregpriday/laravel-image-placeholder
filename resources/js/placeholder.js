@@ -1,23 +1,38 @@
 import {Delaunay} from "d3-delaunay";
-import pako from "pako";
+
+const CHARS = '!#$%&()*+-.0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]^_`abcdefghijklmnopqrstuvwxyz{}~';
+
+/**
+ * Convert an encoded string back into an integer
+ * @param encoded
+ * @returns {*}
+ */
+function parseEncodedInt(encoded) {
+  return encoded.split('').reverse().map((c, i) => {
+    return CHARS.indexOf(c) * Math.pow(CHARS.length, i)
+  }).reduce((a, b) => a + b, 0)
+}
 
 export function displayPlaceholder() {
   const canvases = document.querySelectorAll('canvas.image-placeholder')
   for(let i = 0; i < canvases.length; i++) {
     let canvas = canvases[i]
-    if(canvas.hasAttribute('data-points') && !canvas.classList.contains('image-placeholder-loaded')) {
-      let data = pako.inflateRaw(Buffer.from(canvas.getAttribute('data-points'), 'base64'), {to: 'string'});
-
+    if(canvas.hasAttribute('data-points')) {
+      let data = canvas.getAttribute('data-points');
       // Convert the data into a format that's more like how we put it in.
       let points = data.split('|').map((point) => {
+
+        let pdata = point.split(',')
+        let color = parseEncodedInt(pdata[0]).toString(16).padStart(6, '0')
+
         return [
           // Here we parse out the actual point coordiantes
-          point.substr(6).split(',').map((v) => {
-            let cInt = parseInt(v, 36)
+          pdata.slice(1).map((v) => {
+            let cInt = parseEncodedInt(v)
             return [
               cInt >> 10,
               cInt & 0x3FF,
-              point.substr(0, 6),
+              color,
             ]
           })
         ]
@@ -37,9 +52,9 @@ export function displayPlaceholder() {
         points.map((p) => [p[0], p[1]])
       ).voronoi(vDimensions)
 
+      // Lets start drawing the canvas
       const context = canvas.getContext('2d')
       context.filter = 'blur(10px)'
-
       points.forEach((p, i) => {
         let poly = voronoi.cellPolygon(i)
         if (poly === null) return

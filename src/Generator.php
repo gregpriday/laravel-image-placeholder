@@ -6,8 +6,9 @@ use Imagick;
 
 class Generator
 {
-    CONST DEFAULT_POINT_COUNT = 280;
-    CONST COLOR_COUNT = 16;
+    CONST DEFAULT_POINT_COUNT = 300;
+    CONST COLOR_COUNT = 32;
+    const CHARS = '!#$%&()*+-.0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]^_`abcdefghijklmnopqrstuvwxyz{}~';
 
     private string $imageSrc;
     private array $points;
@@ -103,15 +104,26 @@ class Generator
 
         $return = '';
         foreach($this->colors as $color => $points) {
-            $return .= $color;
+            $return .= $this->encodeInteger(base_convert($color, 16, 10)) . ',';
             $return .= join(
                 ',',
-                array_map(fn($point) => base_convert(($point[0] << 10) + $point[1], 10, 36), $points)
+                array_map(fn($point) => $this->encodeInteger(($point[0] << 10) + $point[1]), $points)
             ) . '|';
         }
-        $return = rtrim($return, '|');
+        return rtrim($return, '|');
+    }
 
-        return base64_encode(gzdeflate($return, 9));
+    public function encodeInteger(int $number)
+    {
+        $return = [];
+        while($number > 0) {
+            $rem = $number % strlen(self::CHARS);
+            array_unshift($return, self::CHARS[$rem]);
+            $number -= $rem;
+            $number /= strlen(self::CHARS);
+        }
+
+        return implode('', $return);
     }
 
 }
