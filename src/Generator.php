@@ -21,7 +21,6 @@ class Generator
 
         $this->points = [];
         $this->colors = [];
-        //$this->img->writeImage(__DIR__ . '/out/edges.jpg');
     }
 
     /**
@@ -45,6 +44,7 @@ class Generator
     protected function findPoints($count = self::DEFAULT_POINT_COUNT)
     {
         $edges = clone $this->img;
+        $edges->quantizeImage(self::COLOR_COUNT, Imagick::COLORSPACE_RGB, 0, false, false);
         $edges->edgeImage(3);
         $edges->setImageType(Imagick::IMGTYPE_GRAYSCALE);
         $edges->blurImage(25, 10);
@@ -110,9 +110,8 @@ class Generator
             ) . '|';
         }
         $return = rtrim($return, '|');
-        $return = gzcompress($return);
 
-        return base64_encode($return);
+        return base64_encode(gzdeflate($return, 9));
     }
 
 }

@@ -12,6 +12,7 @@
     "require": {
         "php": "^7.4",
         "ext-imagick": "*",
+        "ext-zlib": "*",
         "league/color-extractor" : "^0.3"
     },
     "require-dev": {
