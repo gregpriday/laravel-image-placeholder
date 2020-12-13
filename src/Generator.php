@@ -6,11 +6,11 @@ use Imagick;
 
 class Generator
 {
-    CONST DEFAULT_POINT_COUNT = 300;
-    CONST COLOR_COUNT = 32;
-    const CHARS = '!#$%&()*+-.0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]^_`abcdefghijklmnopqrstuvwxyz{}~';
+    CONST IMAGE_SIZE = 1024;
+    CONST DEFAULT_POINT_COUNT = 256;
+    CONST COLOR_COUNT = 16;
+    const CHARS = '!#$%&()*+-.0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]^_`abcdefghijklmnopqrstuvwxyz{}~ ';
 
-    private string $imageSrc;
     private array $points;
     private array $colors;
 
@@ -18,7 +18,7 @@ class Generator
     {
         // Load the main image
         $this->img = new Imagick($imageSrc);
-        $this->img->resizeImage(1024,1024, Imagick::FILTER_GAUSSIAN, 1, true);
+        $this->img->resizeImage(self::IMAGE_SIZE, self::IMAGE_SIZE, Imagick::FILTER_GAUSSIAN, 1, true);
 
         $this->points = [];
         $this->colors = [];
@@ -28,6 +28,7 @@ class Generator
      * Perform the actual calculations
      *
      * @param int $pointCount
+     * @throws \ImagickPixelException
      */
     public function generate($pointCount = self::DEFAULT_POINT_COUNT)
     {
@@ -42,13 +43,13 @@ class Generator
      * @return array
      * @throws \ImagickPixelException
      */
-    protected function findPoints($count = self::DEFAULT_POINT_COUNT)
+    protected function findPoints($count = self::DEFAULT_POINT_COUNT): array
     {
         $edges = clone $this->img;
         $edges->quantizeImage(self::COLOR_COUNT, Imagick::COLORSPACE_RGB, 0, false, false);
-        $edges->edgeImage(3);
         $edges->setImageType(Imagick::IMGTYPE_GRAYSCALE);
-        $edges->blurImage(25, 10);
+        $edges->edgeImage(4);
+        $edges->blurImage(30, 10);
         $edges->normalizeImage();
 
         $this->points = [];
@@ -59,7 +60,7 @@ class Generator
             ];
             $px = $edges->getImagePixelColor($newPoint[0], $newPoint[1]);
 
-            $prob = (0.0025 + $px->getColorValue(Imagick::COLOR_RED))/1.0025;
+            $prob = (0.002 + $px->getColorValue(Imagick::COLOR_RED))/1.002;
             if($prob > rand()/getrandmax()) {
                 // Accept the color
                 $this->points[] = $newPoint;
@@ -67,7 +68,7 @@ class Generator
                 // Draw in black so we're less likely to get a nearby point.
                 $draw = new \ImagickDraw();
                 $draw->setFillColor(new \ImagickPixel('rgb(0,0,0)'));
-                $draw->circle($newPoint[0], $newPoint[1], $newPoint[0] + 24, $newPoint[1] + 24);
+                $draw->circle($newPoint[0], $newPoint[1], $newPoint[0] + 16, $newPoint[1] + 16);
                 $edges->drawImage($draw);
             }
         }
@@ -80,7 +81,7 @@ class Generator
      *
      * @throws \ImagickPixelException
      */
-    protected function findPointColors()
+    protected function findPointColors(): array
     {
         $img = clone $this->img;
         $img->blurImage(25, 10);
@@ -96,9 +97,11 @@ class Generator
 
             $this->colors[$color][] = $point;
         }
+
+        return $this->colors;
     }
 
-    public function getPointsString()
+    public function getPointsString(): string
     {
         if (empty($this->colors)) $this->generate();
 
@@ -113,7 +116,13 @@ class Generator
         return rtrim($return, '|');
     }
 
-    public function encodeInteger(int $number)
+    /**
+     * Encode an integer into a dense string.
+     *
+     * @param int $number
+     * @return string
+     */
+    public function encodeInteger(int $number): string
     {
         $return = [];
         while($number > 0) {

@@ -1308,7 +1308,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "displayPlaceholder", function() { return displayPlaceholder; });
 /* harmony import */ var d3_delaunay__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! d3-delaunay */ "./node_modules/d3-delaunay/src/index.js");
 
-var CHARS = '!#$%&()*+-.0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]^_`abcdefghijklmnopqrstuvwxyz{}~';
+var CHARS = '!#$%&()*+-.0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]^_`abcdefghijklmnopqrstuvwxyz{}~ ';
 /**
  * Convert an encoded string back into an integer
  * @param encoded
@@ -1329,7 +1329,7 @@ function displayPlaceholder() {
   for (var i = 0; i < canvases.length; i++) {
     var canvas = canvases[i];
 
-    if (canvas.hasAttribute('data-points')) {
+    if (canvas.hasAttribute('data-points') && !!canvas.getContext) {
       (function () {
         var data = canvas.getAttribute('data-points'); // Convert the data into a format that's more like how we put it in.
 
@@ -1357,7 +1357,7 @@ function displayPlaceholder() {
           if (poly === null) return;
           context.fillStyle = '#' + p[2];
           context.strokeStyle = '#' + p[2];
-          context.lineWidth = 20;
+          context.lineWidth = 15;
           context.beginPath();
           poly.forEach(function (pp, j) {
             if (j == 0) context.moveTo(pp[0] / scale[0], pp[1] / scale[1]);else context.lineTo(pp[0] / scale[0], pp[1] / scale[1]);
