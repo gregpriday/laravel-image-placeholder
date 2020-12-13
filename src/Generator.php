@@ -7,7 +7,7 @@ use Imagick;
 class Generator
 {
     const ENCODING_VERSION = 1;
-    const IMAGE_SIZE = 1024;
+    const IMAGE_SIZE = 512;
     const DEFAULT_POINT_COUNT = 256;
     const COLOR_COUNT = 16;
     const CHARS = '!#$%&()*+-.0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]^_`abcdefghijklmnopqrstuvwxyz{}~ ';
@@ -19,7 +19,7 @@ class Generator
     {
         // Load the main image
         $this->img = new Imagick($imageSrc);
-        $this->img->resizeImage(self::IMAGE_SIZE, self::IMAGE_SIZE, Imagick::FILTER_GAUSSIAN, 1, true);
+        $this->img->resizeImage(self::IMAGE_SIZE, self::IMAGE_SIZE, Imagick::FILTER_POINT, 1, true);
 
         $this->points = [];
         $this->colors = [];
@@ -47,7 +47,7 @@ class Generator
     protected function findPoints($count = self::DEFAULT_POINT_COUNT): array
     {
         $edges = clone $this->img;
-        $edges->quantizeImage(self::COLOR_COUNT, Imagick::COLORSPACE_RGB, 0, false, false);
+        //$edges->quantizeImage(self::COLOR_COUNT, Imagick::COLORSPACE_RGB, 0, false, false);
         $edges->setImageType(Imagick::IMGTYPE_GRAYSCALE);
         $edges->edgeImage(4);
         $edges->blurImage(30, 10);
@@ -111,7 +111,7 @@ class Generator
             $return .= $this->encodeInteger(base_convert($color, 16, 10)) . ',';
             $return .= join(
                 ',',
-                array_map(fn($point) => $this->encodeInteger(($point[0] << 10) + $point[1]), $points)
+                array_map(fn($point) => $this->encodeInteger(($point[0] << 9) + $point[1]), $points)
             ) . '|';
         }
         return rtrim($return, '|');
@@ -123,7 +123,7 @@ class Generator
      * @param int $number
      * @return string
      */
-    public function encodeInteger(int $number): string
+    protected function encodeInteger(int $number): string
     {
         $return = [];
         while($number > 0) {

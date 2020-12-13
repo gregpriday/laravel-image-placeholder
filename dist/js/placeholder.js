@@ -1333,11 +1333,18 @@ function extractPointsFromData(data) {
     pdata.slice(1).map(function (v) {
       var cInt = parseEncodedInt(v);
       return [// The x position is in the first 10 bits
-      cInt >> 10, // The y position is in the next 10
-      cInt & 0x3FF, color];
+      cInt >> 9, // The y position is in the next 10
+      cInt & 0x1FF, color];
     })];
   }).flat(2);
 }
+/**
+ * Create the SVG for this
+ * @param points
+ * @param image
+ * @returns {string}
+ */
+
 
 function getPointsSVG(points, image) {
   var imageWidth = parseInt(image.getAttribute('width'));
@@ -1348,7 +1355,7 @@ function getPointsSVG(points, image) {
     return [p[0], p[1]];
   })).voronoi(vDimensions); // Lets start drawing the canvas
 
-  var svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + imageWidth + ' ' + imageHeight + '" width="' + imageWidth + '" height="' + imageHeight + '">'; // Add the filter definition
+  var svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + imageWidth + ' ' + imageHeight + '" width="' + imageWidth + '" height="' + imageHeight + '">'; // Add the filter definition by Taylor Hunt - https://codepen.io/tigt/post/fixing-the-white-glow-in-the-css-blur-filter
 
   var blurRadius = 12;
   svg += '<filter id="better-blur" x="0" y="0" width="1" height="1"><feGaussianBlur stdDeviation="' + blurRadius + '" result="blurred"/><feMorphology in="blurred" operator="dilate" radius="' + blurRadius + '" result="expanded"/><feMerge><feMergeNode in="expanded"/><feMergeNode in="blurred"/></feMerge></filter>';
@@ -1364,17 +1371,24 @@ function getPointsSVG(points, image) {
   svg += '</g></svg>';
   return svg;
 }
+/**
+ * Main function to display placeholders
+ */
+
 
 function displayPlaceholders() {
   var images = document.querySelectorAll('img[data-placeholder]');
 
   for (var i = 0; i < images.length; i++) {
+    // Skip any images that already have a background image
     var image = images[i];
     var points = extractPointsFromData(image.getAttribute('data-placeholder'));
-    var svg = getPointsSVG(points, image);
+    var svg = getPointsSVG(points, image); // Add in the background
+
     image.style.backgroundPosition = 'center center';
     image.style.backgroundSize = 'cover';
     image.style.backgroundImage = "url('data:image/svg+xml;base64," + btoa(svg) + "')";
+    image.removeAttribute('data-placeholder');
   }
 }
 

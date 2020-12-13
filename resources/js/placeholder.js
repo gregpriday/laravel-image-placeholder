@@ -27,9 +27,9 @@ function extractPointsFromData(data) {
         let cInt = parseEncodedInt(v)
         return [
           // The x position is in the first 10 bits
-          cInt >> 10,
+          cInt >> 9,
           // The y position is in the next 10
-          cInt & 0x3FF,
+          cInt & 0x1FF,
           color,
         ]
       })
@@ -37,6 +37,12 @@ function extractPointsFromData(data) {
   }).flat(2)
 }
 
+/**
+ * Create the SVG for this
+ * @param points
+ * @param image
+ * @returns {string}
+ */
 function getPointsSVG(points, image) {
   const imageWidth = parseInt(image.getAttribute('width'))
   const imageHeight = parseInt(image.getAttribute('height'))
@@ -56,9 +62,10 @@ function getPointsSVG(points, image) {
   // Lets start drawing the canvas
   let svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + imageWidth + ' ' + imageHeight + '" width="' + imageWidth + '" height="' + imageHeight + '">';
 
-  // Add the filter definition
+  // Add the filter definition by Taylor Hunt - https://codepen.io/tigt/post/fixing-the-white-glow-in-the-css-blur-filter
   const blurRadius = 12
   svg += '<filter id="better-blur" x="0" y="0" width="1" height="1"><feGaussianBlur stdDeviation="' + blurRadius + '" result="blurred"/><feMorphology in="blurred" operator="dilate" radius="' + blurRadius + '" result="expanded"/><feMerge><feMergeNode in="expanded"/><feMergeNode in="blurred"/></feMerge></filter>'
+
   svg += '<g id="voronoi" filter="url(#better-blur)">'
 
   svg += points.map((p, i) => {
@@ -77,15 +84,22 @@ function getPointsSVG(points, image) {
   return svg;
 }
 
+/**
+ * Main function to display placeholders
+ */
 export function displayPlaceholders() {
   const images = document.querySelectorAll('img[data-placeholder]')
   for(let i = 0; i < images.length; i++) {
+    // Skip any images that already have a background image
     let image = images[i]
+
     let points = extractPointsFromData(image.getAttribute('data-placeholder'))
     let svg = getPointsSVG(points, image);
 
+    // Add in the background
     image.style.backgroundPosition = 'center center'
     image.style.backgroundSize = 'cover'
     image.style.backgroundImage = "url('data:image/svg+xml;base64," + btoa(svg) + "')";
+    image.removeAttribute('data-placeholder')
   }
 }
