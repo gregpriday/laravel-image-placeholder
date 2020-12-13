@@ -1300,12 +1300,12 @@ function defaultGetY(p) {
 /*!*************************************!*\
   !*** ./resources/js/placeholder.js ***!
   \*************************************/
-/*! exports provided: displayPlaceholder */
+/*! exports provided: displayPlaceholders */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "displayPlaceholder", function() { return displayPlaceholder; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "displayPlaceholders", function() { return displayPlaceholders; });
 /* harmony import */ var d3_delaunay__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! d3-delaunay */ "./node_modules/d3-delaunay/src/index.js");
 
 var CHARS = '!#$%&()*+-.0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]^_`abcdefghijklmnopqrstuvwxyz{}~ ';
@@ -1323,52 +1323,58 @@ function parseEncodedInt(encoded) {
   }, 0);
 }
 
-function displayPlaceholder() {
-  var canvases = document.querySelectorAll('canvas.image-placeholder');
+function extractPointsFromData(data) {
+  // Convert the data into a format that's more like how we put it in.
+  return data.split('|').map(function (point) {
+    var pdata = point.split(','); // The color is the first element of the array
 
-  for (var i = 0; i < canvases.length; i++) {
-    var canvas = canvases[i];
+    var color = parseEncodedInt(pdata[0]).toString(16).padStart(6, '0');
+    return [// Here we parse out the actual point coordiantes
+    pdata.slice(1).map(function (v) {
+      var cInt = parseEncodedInt(v);
+      return [// The x position is in the first 10 bits
+      cInt >> 10, // The y position is in the next 10
+      cInt & 0x3FF, color];
+    })];
+  }).flat(2);
+}
 
-    if (canvas.hasAttribute('data-points') && !!canvas.getContext) {
-      (function () {
-        var data = canvas.getAttribute('data-points'); // Convert the data into a format that's more like how we put it in.
+function getPointsSVG(points, image) {
+  var imageWidth = parseInt(image.getAttribute('width'));
+  var imageHeight = parseInt(image.getAttribute('height'));
+  var vDimensions = imageWidth > imageHeight ? [0, 0, 1024, 1024 / imageWidth * imageHeight] : [0, 0, 1024 / imageHeight * imageWidth, 1024];
+  var scale = [vDimensions[2] / imageWidth, vDimensions[3] / imageHeight];
+  var voronoi = d3_delaunay__WEBPACK_IMPORTED_MODULE_0__["Delaunay"].from(points.map(function (p) {
+    return [p[0], p[1]];
+  })).voronoi(vDimensions); // Lets start drawing the canvas
 
-        var points = data.split('|').map(function (point) {
-          var pdata = point.split(',');
-          var color = parseEncodedInt(pdata[0]).toString(16).padStart(6, '0');
-          return [// Here we parse out the actual point coordiantes
-          pdata.slice(1).map(function (v) {
-            var cInt = parseEncodedInt(v);
-            return [cInt >> 10, cInt & 0x3FF, color];
-          })];
-        }).flat(2);
-        var cw = parseInt(canvas.getAttribute('width'));
-        var ch = parseInt(canvas.getAttribute('height'));
-        var vDimensions = cw > ch ? [0, 0, 1024, 1024 / cw * ch] : [0, 0, 1024 / ch * cw, 1024];
-        var scale = [vDimensions[2] / cw, vDimensions[3] / ch];
-        var voronoi = d3_delaunay__WEBPACK_IMPORTED_MODULE_0__["Delaunay"].from(points.map(function (p) {
-          return [p[0], p[1]];
-        })).voronoi(vDimensions); // Lets start drawing the canvas
+  var svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + imageWidth + ' ' + imageHeight + '" width="' + imageWidth + '" height="' + imageHeight + '">'; // Add the filter definition
 
-        var context = canvas.getContext('2d');
-        context.filter = 'blur(10px)';
-        points.forEach(function (p, i) {
-          var poly = voronoi.cellPolygon(i);
-          if (poly === null) return;
-          context.fillStyle = '#' + p[2];
-          context.strokeStyle = '#' + p[2];
-          context.lineWidth = 15;
-          context.beginPath();
-          poly.forEach(function (pp, j) {
-            if (j == 0) context.moveTo(pp[0] / scale[0], pp[1] / scale[1]);else context.lineTo(pp[0] / scale[0], pp[1] / scale[1]);
-          });
-          context.closePath();
-          context.fill();
-          context.stroke();
-        });
-        canvas.classList.add('image-placeholder-loaded');
-      })();
-    }
+  var blurRadius = 12;
+  svg += '<filter id="better-blur" x="0" y="0" width="1" height="1"><feGaussianBlur stdDeviation="' + blurRadius + '" result="blurred"/><feMorphology in="blurred" operator="dilate" radius="' + blurRadius + '" result="expanded"/><feMerge><feMergeNode in="expanded"/><feMergeNode in="blurred"/></feMerge></filter>';
+  svg += '<g id="voronoi" filter="url(#better-blur)">';
+  svg += points.map(function (p, i) {
+    var poly = voronoi.cellPolygon(i);
+    if (poly === null) return '';
+    var d = poly.map(function (pp, j) {
+      return (j === 0 ? 'M' : 'L') + Math.round(pp[0] / scale[0]) + ' ' + Math.round(pp[1] / scale[1]);
+    }).join(' ');
+    return '<path d="' + d + ' Z" stroke="#' + p[2] + '" fill="#' + p[2] + '" stroke-width="15" />';
+  }).join("");
+  svg += '</g></svg>';
+  return svg;
+}
+
+function displayPlaceholders() {
+  var images = document.querySelectorAll('img[data-placeholder]');
+
+  for (var i = 0; i < images.length; i++) {
+    var image = images[i];
+    var points = extractPointsFromData(image.getAttribute('data-placeholder'));
+    var svg = getPointsSVG(points, image);
+    image.style.backgroundPosition = 'center center';
+    image.style.backgroundSize = 'cover';
+    image.style.backgroundImage = "url('data:image/svg+xml;base64," + btoa(svg) + "')";
   }
 }
 

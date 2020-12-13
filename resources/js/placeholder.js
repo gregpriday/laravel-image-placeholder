@@ -37,15 +37,16 @@ function extractPointsFromData(data) {
   }).flat(2)
 }
 
-function drawPointsOnCanvas(points, canvas) {
-  const cw = parseInt(canvas.getAttribute('width'))
-  const ch = parseInt(canvas.getAttribute('height'))
-  const vDimensions = cw > ch ?
-    [0, 0, 1024, 1024/cw*ch] : [0, 0, 1024/ch*cw, 1024]
+function getPointsSVG(points, image) {
+  const imageWidth = parseInt(image.getAttribute('width'))
+  const imageHeight = parseInt(image.getAttribute('height'))
+
+  const vDimensions = imageWidth > imageHeight ?
+    [0, 0, 1024, 1024/imageWidth*imageHeight] : [0, 0, 1024/imageHeight*imageWidth, 1024]
 
   const scale = [
-    vDimensions[2] / cw,
-    vDimensions[3] / ch
+    vDimensions[2] / imageWidth,
+    vDimensions[3] / imageHeight
   ]
 
   const voronoi = Delaunay.from(
@@ -53,36 +54,38 @@ function drawPointsOnCanvas(points, canvas) {
   ).voronoi(vDimensions)
 
   // Lets start drawing the canvas
-  const context = canvas.getContext('2d')
-  context.filter = 'blur(10px)'
-  points.forEach((p, i) => {
+  let svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + imageWidth + ' ' + imageHeight + '" width="' + imageWidth + '" height="' + imageHeight + '">';
+
+  // Add the filter definition
+  const blurRadius = 12
+  svg += '<filter id="better-blur" x="0" y="0" width="1" height="1"><feGaussianBlur stdDeviation="' + blurRadius + '" result="blurred"/><feMorphology in="blurred" operator="dilate" radius="' + blurRadius + '" result="expanded"/><feMerge><feMergeNode in="expanded"/><feMergeNode in="blurred"/></feMerge></filter>'
+  svg += '<g id="voronoi" filter="url(#better-blur)">'
+
+  svg += points.map((p, i) => {
     let poly = voronoi.cellPolygon(i)
-    if (poly === null) return
+    if (poly === null) return '';
 
-    context.fillStyle = '#' + p[2]
-    context.strokeStyle = '#' + p[2]
-    context.lineWidth = 15;
-    context.beginPath()
+    let d = poly.map((pp, j) => {
+      return (j === 0 ? 'M' : 'L') + Math.round(pp[0]/scale[0]) + ' ' + Math.round(pp[1]/scale[1])
+    }).join(' ')
 
-    poly.forEach((pp, j) => {
-      if(j === 0) context.moveTo(pp[0]/scale[0], pp[1]/scale[1])
-      else context.lineTo(pp[0]/scale[0], pp[1]/scale[1])
-    })
+    return '<path d="' + d + ' Z" stroke="#' + p[2] + '" fill="#' + p[2] + '" stroke-width="15" />'
 
-    context.closePath()
-    context.fill()
-    context.stroke()
-  })
+  }).join("");
+  svg += '</g></svg>';
+
+  return svg;
 }
 
 export function displayPlaceholders() {
-  const canvases = document.querySelectorAll('canvas.image-placeholder')
-  for(let i = 0; i < canvases.length; i++) {
-    let canvas = canvases[i]
+  const images = document.querySelectorAll('img[data-placeholder]')
+  for(let i = 0; i < images.length; i++) {
+    let image = images[i]
+    let points = extractPointsFromData(image.getAttribute('data-placeholder'))
+    let svg = getPointsSVG(points, image);
 
-    if(canvas.hasAttribute('data-points') && !!canvas.getContext) {
-      let points = extractPointsFromData(canvas.getAttribute('data-points'))
-      drawPointsOnCanvas(points, canvas)
-    }
+    image.style.backgroundPosition = 'center center'
+    image.style.backgroundSize = 'cover'
+    image.style.backgroundImage = "url('data:image/svg+xml;base64," + btoa(svg) + "')";
   }
 }

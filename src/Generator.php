@@ -6,9 +6,10 @@ use Imagick;
 
 class Generator
 {
-    CONST IMAGE_SIZE = 1024;
-    CONST DEFAULT_POINT_COUNT = 256;
-    CONST COLOR_COUNT = 16;
+    const ENCODING_VERSION = 1;
+    const IMAGE_SIZE = 1024;
+    const DEFAULT_POINT_COUNT = 256;
+    const COLOR_COUNT = 16;
     const CHARS = '!#$%&()*+-.0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]^_`abcdefghijklmnopqrstuvwxyz{}~ ';
 
     private array $points;
