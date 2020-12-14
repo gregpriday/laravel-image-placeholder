@@ -1308,6 +1308,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "displayPlaceholders", function() { return displayPlaceholders; });
 /* harmony import */ var d3_delaunay__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! d3-delaunay */ "./node_modules/d3-delaunay/src/index.js");
 
+var PLACEHOLDER_SIZE = 512;
 var CHARS = '!#$%&()*+-.0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]^_`abcdefghijklmnopqrstuvwxyz{}~ ';
 /**
  * Convert an encoded string back into an integer
@@ -1349,7 +1350,7 @@ function extractPointsFromData(data) {
 function getPointsSVG(points, image) {
   var imageWidth = parseInt(image.getAttribute('width'));
   var imageHeight = parseInt(image.getAttribute('height'));
-  var vDimensions = imageWidth > imageHeight ? [0, 0, 1024, 1024 / imageWidth * imageHeight] : [0, 0, 1024 / imageHeight * imageWidth, 1024];
+  var vDimensions = imageWidth > imageHeight ? [0, 0, PLACEHOLDER_SIZE, PLACEHOLDER_SIZE / imageWidth * imageHeight] : [0, 0, PLACEHOLDER_SIZE / imageHeight * imageWidth, PLACEHOLDER_SIZE];
   var scale = [vDimensions[2] / imageWidth, vDimensions[3] / imageHeight];
   var voronoi = d3_delaunay__WEBPACK_IMPORTED_MODULE_0__["Delaunay"].from(points.map(function (p) {
     return [p[0], p[1]];
@@ -1380,8 +1381,9 @@ function displayPlaceholders() {
   var images = document.querySelectorAll('img[data-placeholder]');
 
   for (var i = 0; i < images.length; i++) {
-    // Skip any images that already have a background image
-    var image = images[i];
+    var image = images[i]; // Skip empty placeholders.
+
+    if (!image.getAttribute('data-placeholder')) continue;
     var points = extractPointsFromData(image.getAttribute('data-placeholder'));
     var svg = getPointsSVG(points, image); // Add in the background
 

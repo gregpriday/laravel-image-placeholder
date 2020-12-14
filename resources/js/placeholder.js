@@ -1,5 +1,6 @@
 import {Delaunay} from "d3-delaunay";
 
+const PLACEHOLDER_SIZE = 512;
 const CHARS = '!#$%&()*+-.0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]^_`abcdefghijklmnopqrstuvwxyz{}~ ';
 
 /**
@@ -48,7 +49,7 @@ function getPointsSVG(points, image) {
   const imageHeight = parseInt(image.getAttribute('height'))
 
   const vDimensions = imageWidth > imageHeight ?
-    [0, 0, 1024, 1024/imageWidth*imageHeight] : [0, 0, 1024/imageHeight*imageWidth, 1024]
+    [0, 0,PLACEHOLDER_SIZE, PLACEHOLDER_SIZE/imageWidth*imageHeight] : [0, 0, PLACEHOLDER_SIZE/imageHeight*imageWidth, PLACEHOLDER_SIZE]
 
   const scale = [
     vDimensions[2] / imageWidth,
@@ -90,8 +91,10 @@ function getPointsSVG(points, image) {
 export function displayPlaceholders() {
   const images = document.querySelectorAll('img[data-placeholder]')
   for(let i = 0; i < images.length; i++) {
-    // Skip any images that already have a background image
     let image = images[i]
+
+    // Skip empty placeholders.
+    if (!image.getAttribute('data-placeholder')) continue;
 
     let points = extractPointsFromData(image.getAttribute('data-placeholder'))
     let svg = getPointsSVG(points, image);
