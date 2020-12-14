@@ -1,5 +1,6 @@
 import {Delaunay} from "d3-delaunay";
 
+const PLACEHOLDER_SIZE = 512;
 const CHARS = '!#$%&()*+-.0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]^_`abcdefghijklmnopqrstuvwxyz{}~ ';
 
 /**
@@ -27,9 +28,9 @@ function extractPointsFromData(data) {
         let cInt = parseEncodedInt(v)
         return [
           // The x position is in the first 10 bits
-          cInt >> 10,
+          cInt >> 9,
           // The y position is in the next 10
-          cInt & 0x3FF,
+          cInt & 0x1FF,
           color,
         ]
       })
@@ -37,15 +38,22 @@ function extractPointsFromData(data) {
   }).flat(2)
 }
 
-function drawPointsOnCanvas(points, canvas) {
-  const cw = parseInt(canvas.getAttribute('width'))
-  const ch = parseInt(canvas.getAttribute('height'))
-  const vDimensions = cw > ch ?
-    [0, 0, 1024, 1024/cw*ch] : [0, 0, 1024/ch*cw, 1024]
+/**
+ * Create the SVG for this
+ * @param points
+ * @param image
+ * @returns {string}
+ */
+function getPointsSVG(points, image) {
+  const imageWidth = parseInt(image.getAttribute('width'))
+  const imageHeight = parseInt(image.getAttribute('height'))
+
+  const vDimensions = imageWidth > imageHeight ?
+    [0, 0,PLACEHOLDER_SIZE, PLACEHOLDER_SIZE/imageWidth*imageHeight] : [0, 0, PLACEHOLDER_SIZE/imageHeight*imageWidth, PLACEHOLDER_SIZE]
 
   const scale = [
-    vDimensions[2] / cw,
-    vDimensions[3] / ch
+    vDimensions[2] / imageWidth,
+    vDimensions[3] / imageHeight
   ]
 
   const voronoi = Delaunay.from(
@@ -53,36 +61,48 @@ function drawPointsOnCanvas(points, canvas) {
   ).voronoi(vDimensions)
 
   // Lets start drawing the canvas
-  const context = canvas.getContext('2d')
-  context.filter = 'blur(10px)'
-  points.forEach((p, i) => {
+  let svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + imageWidth + ' ' + imageHeight + '" width="' + imageWidth + '" height="' + imageHeight + '">';
+
+  // Add the filter definition by Taylor Hunt - https://codepen.io/tigt/post/fixing-the-white-glow-in-the-css-blur-filter
+  const blurRadius = 12
+  svg += '<filter id="better-blur" x="0" y="0" width="1" height="1"><feGaussianBlur stdDeviation="' + blurRadius + '" result="blurred"/><feMorphology in="blurred" operator="dilate" radius="' + blurRadius + '" result="expanded"/><feMerge><feMergeNode in="expanded"/><feMergeNode in="blurred"/></feMerge></filter>'
+
+  svg += '<g id="voronoi" filter="url(#better-blur)">'
+
+  svg += points.map((p, i) => {
     let poly = voronoi.cellPolygon(i)
-    if (poly === null) return
+    if (poly === null) return '';
 
-    context.fillStyle = '#' + p[2]
-    context.strokeStyle = '#' + p[2]
-    context.lineWidth = 15;
-    context.beginPath()
+    let d = poly.map((pp, j) => {
+      return (j === 0 ? 'M' : 'L') + Math.round(pp[0]/scale[0]) + ' ' + Math.round(pp[1]/scale[1])
+    }).join(' ')
 
-    poly.forEach((pp, j) => {
-      if(j === 0) context.moveTo(pp[0]/scale[0], pp[1]/scale[1])
-      else context.lineTo(pp[0]/scale[0], pp[1]/scale[1])
-    })
+    return '<path d="' + d + ' Z" stroke="#' + p[2] + '" fill="#' + p[2] + '" stroke-width="15" />'
 
-    context.closePath()
-    context.fill()
-    context.stroke()
-  })
+  }).join("");
+  svg += '</g></svg>';
+
+  return svg;
 }
 
+/**
+ * Main function to display placeholders
+ */
 export function displayPlaceholders() {
-  const canvases = document.querySelectorAll('canvas.image-placeholder')
-  for(let i = 0; i < canvases.length; i++) {
-    let canvas = canvases[i]
+  const images = document.querySelectorAll('img[data-placeholder]')
+  for(let i = 0; i < images.length; i++) {
+    let image = images[i]
 
-    if(canvas.hasAttribute('data-points') && !!canvas.getContext) {
-      let points = extractPointsFromData(canvas.getAttribute('data-points'))
-      drawPointsOnCanvas(points, canvas)
-    }
+    // Skip empty placeholders.
+    if (!image.getAttribute('data-placeholder')) continue;
+
+    let points = extractPointsFromData(image.getAttribute('data-placeholder'))
+    let svg = getPointsSVG(points, image);
+
+    // Add in the background
+    image.style.backgroundPosition = 'center center'
+    image.style.backgroundSize = 'cover'
+    image.style.backgroundImage = "url('data:image/svg+xml;base64," + btoa(svg) + "')";
+    image.removeAttribute('data-placeholder')
   }
 }

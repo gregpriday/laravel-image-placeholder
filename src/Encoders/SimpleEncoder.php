@@ -1,27 +1,45 @@
 <?php
 
-namespace SiteOrigin\VoronoiPlaceholder;
+namespace SiteOrigin\VoronoiPlaceholder\Encoders;
 
 use Imagick;
+use SiteOrigin\VoronoiPlaceholder\Encoders\BaseEncoder;
 
-class Generator
+class SimpleEncoder extends BaseEncoder
 {
-    CONST IMAGE_SIZE = 1024;
-    CONST DEFAULT_POINT_COUNT = 256;
-    CONST COLOR_COUNT = 16;
-    const CHARS = '!#$%&()*+-.0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]^_`abcdefghijklmnopqrstuvwxyz{}~ ';
+    const ENCODING_VERSION = 1;
 
     private array $points;
     private array $colors;
 
-    public function __construct(string $imageSrc)
+    /**
+     * Generator constructor.
+     *
+     * @param string|resource $src
+     * @throws \ImagickException
+     */
+    public function __construct($src)
     {
-        // Load the main image
-        $this->img = new Imagick($imageSrc);
-        $this->img->resizeImage(self::IMAGE_SIZE, self::IMAGE_SIZE, Imagick::FILTER_GAUSSIAN, 1, true);
+        parent::__construct($src);
 
         $this->points = [];
         $this->colors = [];
+    }
+
+    public function encode(): string
+    {
+        if (empty($this->colors)) $this->generate();
+
+        $return = '';
+        foreach($this->colors as $color => $points) {
+            $return .= $this->encodeInteger(base_convert($color, 16, 10)) . ',';
+            $return .= join(
+                    ',',
+                    array_map(fn($point) => $this->encodeInteger(($point[0] << 9) + $point[1]), $points)
+                ) . '|';
+        }
+
+        return rtrim($return, '|');
     }
 
     /**
@@ -30,7 +48,7 @@ class Generator
      * @param int $pointCount
      * @throws \ImagickPixelException
      */
-    public function generate($pointCount = self::DEFAULT_POINT_COUNT)
+    protected function generate($pointCount = self::DEFAULT_POINT_COUNT)
     {
         $this->findPoints($pointCount);
         $this->findPointColors();
@@ -46,7 +64,7 @@ class Generator
     protected function findPoints($count = self::DEFAULT_POINT_COUNT): array
     {
         $edges = clone $this->img;
-        $edges->quantizeImage(self::COLOR_COUNT, Imagick::COLORSPACE_RGB, 0, false, false);
+        //$edges->quantizeImage(self::COLOR_COUNT, Imagick::COLORSPACE_RGB, 0, false, false);
         $edges->setImageType(Imagick::IMGTYPE_GRAYSCALE);
         $edges->edgeImage(4);
         $edges->blurImage(30, 10);
@@ -100,39 +118,4 @@ class Generator
 
         return $this->colors;
     }
-
-    public function getPointsString(): string
-    {
-        if (empty($this->colors)) $this->generate();
-
-        $return = '';
-        foreach($this->colors as $color => $points) {
-            $return .= $this->encodeInteger(base_convert($color, 16, 10)) . ',';
-            $return .= join(
-                ',',
-                array_map(fn($point) => $this->encodeInteger(($point[0] << 10) + $point[1]), $points)
-            ) . '|';
-        }
-        return rtrim($return, '|');
-    }
-
-    /**
-     * Encode an integer into a dense string.
-     *
-     * @param int $number
-     * @return string
-     */
-    public function encodeInteger(int $number): string
-    {
-        $return = [];
-        while($number > 0) {
-            $rem = $number % strlen(self::CHARS);
-            array_unshift($return, self::CHARS[$rem]);
-            $number -= $rem;
-            $number /= strlen(self::CHARS);
-        }
-
-        return implode('', $return);
-    }
-
 }
