@@ -9,8 +9,8 @@ class SimpleEncoder extends BaseEncoder
 {
     const ENCODING_VERSION = 1;
 
-    private array $points;
-    private array $colors;
+    protected array $points;
+    protected array $colors;
 
     /**
      * Generator constructor.
@@ -28,7 +28,7 @@ class SimpleEncoder extends BaseEncoder
 
     public function encode(): string
     {
-        if (empty($this->colors)) $this->generate();
+        $this->generate();
 
         $return = '';
         foreach($this->colors as $color => $points) {
