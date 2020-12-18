@@ -20,8 +20,6 @@ class TestGenerate extends TestCase
     {
         $vd = new MosaicEncoder(__DIR__ . '/images/andrew-pons-lylCw4zcA7I-unsplash.jpg');
         $s = $vd->encode();
-        dd(strlen($s));
-
         $this->assertNotEmpty($s);
     }
 

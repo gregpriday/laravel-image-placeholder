@@ -11,6 +11,7 @@ class MosaicEncoder extends SimpleEncoder
 {
     const ENCODING_VERSION = 1;
 
+
     protected function findPoints($count = self::DEFAULT_POINT_COUNT): array
     {
         $img = clone $this->img;
@@ -91,9 +92,13 @@ class MosaicEncoder extends SimpleEncoder
     }
 
     /**
-     * Testing function to draw a Mosaic.
+     * Draw the mosaic onto a clone of the reference image.
+     *
+     * @param array $diagram
+     * @param \Imagick $refImage
+     * @return \Imagick
      */
-    private function drawMosaic($diagram, $refImage): Imagick
+    private function drawMosaic(array $diagram, Imagick $refImage): Imagick
     {
         // Draw the mosaic
         $m = clone $refImage;
@@ -114,11 +119,5 @@ class MosaicEncoder extends SimpleEncoder
         }
 
         return $m;
-    }
-
-    private static function nrand($mean, $sd){
-        $x = mt_rand()/mt_getrandmax();
-        $y = mt_rand()/mt_getrandmax();
-        return sqrt(-2*log($x))*cos(2*pi()*$y)*$sd + $mean;
     }
 }

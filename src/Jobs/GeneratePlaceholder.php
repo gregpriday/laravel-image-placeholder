@@ -8,7 +8,7 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Cache;
-use SiteOrigin\VoronoiPlaceholder\Encoders\SimpleEncoder;
+use SiteOrigin\VoronoiPlaceholder\Encoders\MosaicEncoder;
 use SiteOrigin\VoronoiPlaceholder\Events\PlaceholderGenerated;
 use SiteOrigin\VoronoiPlaceholder\Placeholder;
 
@@ -30,7 +30,7 @@ class GeneratePlaceholder implements ShouldQueue
     public function handle()
     {
         // Encode the image into a placeholder
-        $encoder = new SimpleEncoder($this->url);
+        $encoder = new MosaicEncoder($this->url);
 
         Cache::put(Placeholder::cacheKey($this->url), $encoder->encode());
 
