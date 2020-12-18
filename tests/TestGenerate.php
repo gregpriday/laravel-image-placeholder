@@ -5,22 +5,15 @@ namespace SiteOrigin\VoronoiPlaceholder\Tests;
 use Imagick;
 use PHPUnit\Framework\TestCase;
 use SiteOrigin\VoronoiPlaceholder\Encoders\MosaicEncoder;
+use SiteOrigin\VoronoiPlaceholder\Encoders\EdgeEncoder;
 use SiteOrigin\VoronoiPlaceholder\Encoders\SimpleEncoder;
 
 class TestGenerate extends TestCase
 {
-    public function test_generate_minimal_voronoi()
+    public function test_generate_with_edge_encoder()
     {
-        $vd = new SimpleEncoder(__DIR__ . '/images/andrew-pons-lylCw4zcA7I-unsplash.jpg');
+        $vd = new EdgeEncoder('https://unsplash.com/photos/lylCw4zcA7I/download?force=true&w=640');
         $s = $vd->encode();
         $this->assertNotEmpty($s);
     }
-
-    public function test_generate_mosaic_encoder()
-    {
-        $vd = new MosaicEncoder(__DIR__ . '/images/andrew-pons-lylCw4zcA7I-unsplash.jpg');
-        $s = $vd->encode();
-        $this->assertNotEmpty($s);
-    }
-
 }

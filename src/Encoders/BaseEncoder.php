@@ -8,7 +8,7 @@ use Imagick;
 abstract class BaseEncoder
 {
     const IMAGE_SIZE = 512;
-    const DEFAULT_POINT_COUNT = 256;
+    const DEFAULT_POINT_COUNT = 250;
     const COLOR_COUNT = 16;
 
     const CHARS = '!#$%&()*+-.0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]^_`abcdefghijklmnopqrstuvwxyz{}~ ';

@@ -3,28 +3,13 @@
 namespace SiteOrigin\VoronoiPlaceholder\Encoders;
 
 use Imagick;
-use SiteOrigin\VoronoiPlaceholder\Encoders\BaseEncoder;
+use ImagickDraw;
+use ImagickPixel;
 
-class SimpleEncoder extends BaseEncoder
+class EdgeEncoder extends BaseEncoder
 {
     const ENCODING_VERSION = 1;
-
-    protected array $points;
-    protected array $colors;
-
-    /**
-     * Generator constructor.
-     *
-     * @param string|resource $src
-     * @throws \ImagickException
-     */
-    public function __construct($src)
-    {
-        parent::__construct($src);
-
-        $this->points = [];
-        $this->colors = [];
-    }
+    const RANDOM_SEED = 59213;
 
     public function encode(): string
     {
@@ -54,42 +39,48 @@ class SimpleEncoder extends BaseEncoder
         $this->findPointColors();
     }
 
-    /**
-     * Find point positions that correspond with highly salient areas of the image.
-     *
-     * @param int $count
-     * @return array
-     * @throws \ImagickPixelException
-     */
     protected function findPoints($count = self::DEFAULT_POINT_COUNT): array
     {
-        $edges = clone $this->img;
-        //$edges->quantizeImage(self::COLOR_COUNT, Imagick::COLORSPACE_RGB, 0, false, false);
-        $edges->setImageType(Imagick::IMGTYPE_GRAYSCALE);
-        $edges->edgeImage(4);
-        $edges->blurImage(30, 10);
-        $edges->normalizeImage();
+        $img = clone $this->img;
+        $img->blurImage(10, 10);
+        $img->quantizeImage(32, Imagick::COLORSPACE_RGB, 0, false, false);
 
+        $edges = clone $this->img;
+        $edges->blurImage(15, 10);
+        $edges->setImageType(Imagick::IMGTYPE_GRAYSCALE);
+        $edges->quantizeImage(12, Imagick::COLORSPACE_RGB, 0, false, false);
+        $edges->edgeImage(6);
+        $edges->blurImage(6,2);
+        $edges->normalizeImage();
+        $edges->functionImage(Imagick::FUNCTION_SINUSOID, [1, -90]);
+
+        // Use a predictable seed so we get the same image every time.
+        srand(self::RANDOM_SEED);
         $this->points = [];
+        $runs = 0;
         while(count($this->points) < $count) {
             $newPoint = [
                 rand(0, $edges->getImageWidth()),
-                rand(0, $edges->getImageHeight()),
+                rand(0, $edges->getImageHeight())
             ];
             $px = $edges->getImagePixelColor($newPoint[0], $newPoint[1]);
 
-            $prob = (0.002 + $px->getColorValue(Imagick::COLOR_RED))/1.002;
+            $prob = $edges->getImagePixelColor($newPoint[0], $newPoint[1])->getColorValue(Imagick::COLOR_RED);
+            $prob = ($prob+0.005)/1.005;
             if($prob > rand()/getrandmax()) {
                 // Accept the color
                 $this->points[] = $newPoint;
 
                 // Draw in black so we're less likely to get a nearby point.
-                $draw = new \ImagickDraw();
-                $draw->setFillColor(new \ImagickPixel('rgb(0,0,0)'));
-                $draw->circle($newPoint[0], $newPoint[1], $newPoint[0] + 16, $newPoint[1] + 16);
+                $draw = new ImagickDraw();
+                $draw->setFillColor(new ImagickPixel('rgb(0,0,0)'));
+                $draw->circle($newPoint[0], $newPoint[1], $newPoint[0] + 8, $newPoint[1] + 8);
                 $edges->drawImage($draw);
             }
+            $runs++;
+            if ($runs >= 1750) break;
         }
+        srand((double) microtime() * 1000000);
 
         return $this->points;
     }
