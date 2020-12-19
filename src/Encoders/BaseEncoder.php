@@ -3,14 +3,14 @@
 namespace SiteOrigin\VoronoiPlaceholder\Encoders;
 
 use GuzzleHttp\Psr7\Stream;
+use Illuminate\Support\Collection;
 use Imagick;
 
 abstract class BaseEncoder
 {
-    const IMAGE_SIZE = 512;
-    const DEFAULT_POINT_COUNT = 250;
-    const COLOR_COUNT = 16;
-
+    const IMAGE_SIZE = 256;
+    const DEFAULT_POINT_COUNT = 256;
+    const COLOR_COUNT = 32;
     const CHARS = '!#$%&()*+-.0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]^_`abcdefghijklmnopqrstuvwxyz{}~ ';
 
     /**
@@ -37,13 +37,32 @@ abstract class BaseEncoder
         $this->img->resizeImage(self::IMAGE_SIZE, self::IMAGE_SIZE, Imagick::FILTER_POINT, 1, true);
     }
 
+    public function encode($count = self::DEFAULT_POINT_COUNT): string
+    {
+        $points = Collection::make($this->findPoints($count));
+
+        return $points->groupBy('color')
+            ->map(function($p, $c){
+                return
+                    self::encodeInteger(base_convert($c, 16, 10)) . ',' .
+                    // We can chunk values if PHP supports 64 bit integers
+                    $p->chunk(PHP_INT_SIZE / 2)->map(function($pc){
+                        $combined = $pc->map(fn($p) => [$p->x, $p->y])
+                            ->flatten()
+                            ->map(fn($v, $i) => ($v << $i*8))
+                            ->sum();
+                        return self::encodeInteger($combined);
+                    })->join(',');
+            })->join('|');
+    }
+
     /**
      * Encode an integer into a dense string.
      *
      * @param int $number
      * @return string
      */
-    protected function encodeInteger(int $number): string
+    public static function encodeInteger(int $number): string
     {
         $return = [];
         while($number > 0) {
@@ -55,9 +74,4 @@ abstract class BaseEncoder
 
         return implode('', $return);
     }
-
-    /**
-     * @return string The main generated placeholder.
-     */
-    abstract public function encode(): string;
 }
