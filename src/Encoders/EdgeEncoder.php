@@ -2,6 +2,7 @@
 
 namespace SiteOrigin\VoronoiPlaceholder\Encoders;
 
+use Illuminate\Support\Collection;
 use Imagick;
 use ImagickDraw;
 use ImagickPixel;
@@ -12,7 +13,7 @@ class EdgeEncoder extends BaseEncoder
     const ENCODING_VERSION = 1;
     const RANDOM_SEED = 59213;
 
-    public function findPoints($count = self::DEFAULT_POINT_COUNT): array
+    public function findPoints($count = self::DEFAULT_POINT_COUNT): Collection
     {
         // Create an image that identifies the edges
         $edges = clone $this->img;
@@ -63,9 +64,9 @@ class EdgeEncoder extends BaseEncoder
         $img->quantizeImage(self::COLOR_COUNT, Imagick::COLORSPACE_RGB, 0, false, false);
 
         // Return the points with reference image set
-        return array_map(function(Point $point) use ($img){
+        return Collection::make(array_map(function(Point $point) use ($img){
             $point->setPointColor($img);
             return $point;
-        }, $points);
+        }, $points));
     }
 }

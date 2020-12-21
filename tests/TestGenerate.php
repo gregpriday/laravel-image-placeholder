@@ -13,30 +13,25 @@ class TestGenerate extends TestCase
 {
     use DrawsMosaic;
 
-    public function test_generate_preview_image()
+    public function test_generate_edge_encoder_image()
     {
-        $vd = new EdgeEncoder('https://unsplash.com/photos/GVnUVP8cs1o/download?force=true&w=640');
+        $vd = new EdgeEncoder('https://unsplash.com/photos/4VDRCoNuvE0/download?force=true&w=640');
 
         $points = $vd->findPoints();
+        $s = $vd->encode($points);
+        $this->assertNotEmpty($s);
 
         // Lets draw this image
-        $points = array_map(function(Point $point){
-            $point->x *= 2;
-            $point->y *= 2;
+        $scale = 2;
+        $points = $points->map(function(Point $point) use ($scale) {
+            $point->x *= $scale;
+            $point->y *= $scale;
             return $point;
-        }, $points);
+        });
 
-        $m = $this->drawMosaic($points, $vd->img->getImageWidth()*2, $vd->img->getImageHeight()*2);
-        $m->blurImage(32,16);
+        $m = $this->drawMosaic($points->toArray(), $vd->img->getImageWidth()*$scale, $vd->img->getImageHeight()*$scale);
+        $m->blurImage($scale*16,$scale*8);
         $m->writeImage(__DIR__ . '/images/out.png');
         $this->assertFileExists(__DIR__ . '/images/out.png');
-    }
-
-    public function test_generate_encode()
-    {
-        $vd = new EdgeEncoder('https://unsplash.com/photos/GVnUVP8cs1o/download?force=true&w=640');
-
-        $s = $vd->encode();
-        $this->assertNotEmpty($s);
     }
 }

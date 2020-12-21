@@ -37,16 +37,15 @@ abstract class BaseEncoder
         $this->img->resizeImage(self::IMAGE_SIZE, self::IMAGE_SIZE, Imagick::FILTER_POINT, 1, true);
     }
 
-    public function encode($count = self::DEFAULT_POINT_COUNT): string
+    public function encode(Collection $points): string
     {
-        $points = Collection::make($this->findPoints($count));
-
         return $points->groupBy('color')
             ->map(function($p, $c){
                 return
                     self::encodeInteger(base_convert($c, 16, 10)) . ',' .
                     // We can chunk values if PHP supports 64 bit integers
-                    $p->chunk(PHP_INT_SIZE / 2)->map(function($pc){
+                    $p->chunk(PHP_INT_SIZE == 8 ? 2 : 1)->map(function($pc){
+                        // Find the combined integer
                         $combined = $pc->map(fn($p) => [$p->x, $p->y])
                             ->flatten()
                             ->map(fn($v, $i) => ($v << $i*8))
@@ -54,6 +53,11 @@ abstract class BaseEncoder
                         return self::encodeInteger($combined);
                     })->join(',');
             })->join('|');
+    }
+
+    public function decode()
+    {
+
     }
 
     /**
