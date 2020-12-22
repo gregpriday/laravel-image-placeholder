@@ -1,6 +1,6 @@
 {
-    "name": "siteorigin/voronoi-placeholder",
-    "description": "Creates a Voronoi placeholder that you can use as a placeholder with d3-delaunay.",
+    "name": "siteorigin/laravel-image-placeholder",
+    "description": "Creates a simple image placeholder using compressed PNGs.",
     "type": "package",
     "license": "MIT",
     "authors": [
@@ -18,8 +18,7 @@
         "spatie/image-optimizer": "^1.3"
     },
     "require-dev": {
-        "phpunit/phpunit": "^8",
-        "sroze/voronoi": "dev-develop"
+        "phpunit/phpunit": "^8"
     },
     "autoload": {
         "files": [
