@@ -2,36 +2,40 @@
 
 namespace SiteOrigin\VoronoiPlaceholder\Tests;
 
-use Imagick;
 use PHPUnit\Framework\TestCase;
-use SiteOrigin\VoronoiPlaceholder\Encoders\BaseEncoder;
-use SiteOrigin\VoronoiPlaceholder\Encoders\EdgeEncoder;
-use SiteOrigin\VoronoiPlaceholder\Encoders\Point;
+use SiteOrigin\VoronoiPlaceholder\Encoder;
 use SiteOrigin\VoronoiPlaceholder\Tests\Traits\DrawsMosaic;
 
 class TestGenerate extends TestCase
 {
     use DrawsMosaic;
 
-    public function test_generate_edge_encoder_image()
+    public function test_generate_reduction_encoder_image()
     {
-        $vd = new EdgeEncoder('https://unsplash.com/photos/4VDRCoNuvE0/download?force=true&w=640');
+        $images = [
+            //'https://unsplash.com/photos/RpZxHPikR6A/download?force=true&w=640',
+            //'https://unsplash.com/photos/WIlvkeCScuE/download?force=true&w=640',
+            'https://unsplash.com/photos/R2YNRCpufl4/download?force=true&w=640',
+            //'https://unsplash.com/photos/eqW1MPinEV4/download?force=true&w=640',
+            //'https://unsplash.com/photos/7cH0XaQUZro/download?force=true&w=640',
+            //'https://unsplash.com/photos/s3lTiHe5T8A/download?force=true&w=640',
+            //'https://unsplash.com/photos/tvNDFJalLmY/download?force=true&w=640',
+            //'https://unsplash.com/photos/BPrk2cOoCq8/download?force=true&w=640',
+            //'https://unsplash.com/photos/dkCDYn5Sy0Y/download?force=true&w=640',
+            //'https://unsplash.com/photos/vacdzbeuEHM/download?force=true&w=640',
+            //'https://unsplash.com/photos/FALAUa2sHYU/download?force=true&w=640',
+        ];
 
-        $points = $vd->findPoints();
-        $s = $vd->encode($points);
-        $this->assertNotEmpty($s);
 
-        // Lets draw this image
-        $scale = 2;
-        $points = $points->map(function(Point $point) use ($scale) {
-            $point->x *= $scale;
-            $point->y *= $scale;
-            return $point;
-        });
+        foreach($images as $image){
+            $vd = new Encoder($image);
+            $s = $vd->encode();
+            $this->assertNotEmpty($s);
+        }
 
-        $m = $this->drawMosaic($points->toArray(), $vd->img->getImageWidth()*$scale, $vd->img->getImageHeight()*$scale);
-        $m->blurImage($scale*16,$scale*8);
-        $m->writeImage(__DIR__ . '/images/out.png');
-        $this->assertFileExists(__DIR__ . '/images/out.png');
+        $m = $this->drawMosaic($s);
+        $m->blurImage(52,26);
+        $m->writeImage(__DIR__ . '/images/out.jpg');
+        $this->assertFileExists(__DIR__ . '/images/out.jpg');
     }
 }
