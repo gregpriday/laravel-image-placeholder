@@ -7,7 +7,7 @@ function setImageSvg(image) {
   const imageWidth = parseInt(image.getAttribute('width'))
   const imageHeight = parseInt(image.getAttribute('height'))
   const imageData = image.getAttribute('data-placeholder');
-  const blurRadius = Math.floor(imageWidth > imageHeight ? imageWidth / 32 : imageHeight / 32);
+  const blurRadius = Math.floor(imageWidth > imageHeight ? imageWidth / 64 : imageHeight / 64);
 
   const canvas = document.createElement('canvas');
   let placeholder = new Image();

@@ -105,7 +105,7 @@ function setImageSvg(image) {
   var imageWidth = parseInt(image.getAttribute('width'));
   var imageHeight = parseInt(image.getAttribute('height'));
   var imageData = image.getAttribute('data-placeholder');
-  var blurRadius = Math.floor(imageWidth > imageHeight ? imageWidth / 32 : imageHeight / 32);
+  var blurRadius = Math.floor(imageWidth > imageHeight ? imageWidth / 64 : imageHeight / 64);
   var canvas = document.createElement('canvas');
   var placeholder = new Image();
 

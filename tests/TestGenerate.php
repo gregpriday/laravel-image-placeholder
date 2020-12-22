@@ -2,11 +2,8 @@
 
 namespace SiteOrigin\VoronoiPlaceholder\Tests;
 
-use Illuminate\Support\Str;
-use Imagick;
 use PHPUnit\Framework\TestCase;
-use ReflectionClass;
-use SiteOrigin\VoronoiPlaceholder\Encoders\Encoder;
+use SiteOrigin\VoronoiPlaceholder\Encoder;
 use SiteOrigin\VoronoiPlaceholder\Tests\Traits\DrawsMosaic;
 
 class TestGenerate extends TestCase
@@ -35,8 +32,6 @@ class TestGenerate extends TestCase
             $s = $vd->encode();
             $this->assertNotEmpty($s);
         }
-
-        $this->assertNotEmpty($s);
 
         $m = $this->drawMosaic($s);
         $m->blurImage(52,26);

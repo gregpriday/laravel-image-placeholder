@@ -8,9 +8,6 @@ if (! function_exists('encode_placeholder')) {
 
     function placeholder_base64($url): string
     {
-        $encoder = new Encoder($url);
-        return $encoder->encode();
-
         return Cache::rememberForever('placeholder_image::' . $url, function() use ($url){
             $encoder = new Encoder($url);
             return $encoder->encode();
