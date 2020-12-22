@@ -48,7 +48,7 @@ class AddPlaceholders
             if(count($imgElements)) {
 
                 foreach($imgElements as $el) {
-                    $el->setAttribute('data-placeholder', Placeholder::getOrDispatch(($el->getAttribute('src')), ''));
+                    $el->setAttribute('data-placeholder', placeholder_base64($el->getAttribute('src')));
                 }
 
                 $response->setContent($doc->saveHTML());
@@ -57,25 +57,4 @@ class AddPlaceholders
 
         return $response;
     }
-
-    //protected function fetchAndCacheImagePlaceholders(Collection $images)
-    //{
-    //    if($images->count() <= 0) return;
-    //
-    //    $requests = $images->map(fn($url) => new GuzzleRequest('GET', $url));
-    //
-    //    // We're all good to go
-    //    $client = new GuzzleClient();
-    //    $pool = new GuzzlePool($client, $requests->getIterator(), [
-    //        'concurrency' => 5,
-    //        'fulfilled' => function (GuzzleResponse $response, $index) use ($images){
-    //            $url = $images[$index];
-    //            $generator = new Generator($response->getBody());
-    //            $placeholder = $generator->getPointsString();
-    //            Cache::put($this->cacheKey($url), $placeholder, 30*86400);
-    //        },
-    //    ]);
-    //    $promise = $pool->promise();
-    //    $promise->wait();
-    //}
 }

@@ -4,8 +4,7 @@ namespace SiteOrigin\VoronoiPlaceholder\Tests\Traits;
 
 use Imagick;
 use ImagickDraw;
-use ImagickPixel;
-use SiteOrigin\VoronoiPlaceholder\Encoders\Point;
+use sroze\voronoi\Nurbs\Point;
 use sroze\voronoi\Nurbs\Voronoi;
 
 trait DrawsMosaic
@@ -19,46 +18,14 @@ trait DrawsMosaic
      * @param bool $withCenters
      * @return \Imagick
      */
-    protected function drawMosaic(array $points, $width, $height, $withCenters = false): Imagick
+    protected function drawMosaic(string $encoded): Imagick
     {
-        // Create the voronoi diagram to be dawn.
-        $bound = (object) ['xl' => 0, 'xr' => $width, 'yt' => 0, 'yb' => $height];
-        $sites = array_map(function(Point $point){
-            return $point->asNurbsPoint();
-        }, $points);
-        $voronoi = new Voronoi();
-        $diagram = $voronoi->compute($sites, $bound);
+        $img = new Imagick();
+        $img->readImageBlob(base64_decode($encoded));
 
-
-        // Draw the mosaic
-        $m = new Imagick();
-        $m->newImage($width, $height, new ImagickPixel('black'));
-        $m->setImageFormat('png');
-        foreach($diagram['cells'] as $cell) {
-            $poly = [];
-            if(!empty($cell->_halfedges)) {
-                foreach ($cell->_halfedges as $edge) {
-                    $p = $edge->getStartPoint();
-                    $poly[] = [ 'x' => $p->x, 'y' => $p->y ];
-                }
-            }
-
-            // Draw the poly on the original image
-            if( !empty($poly) ) {
-                $draw = new ImagickDraw();
-                $draw->setFillColor('#'.$cell->_site->color);
-                $draw->polygon($poly);
-
-                if($withCenters) {
-                    // Add in a red center
-                    $draw->setFillColor(new ImagickPixel('red'));
-                    $draw->circle($cell->_site->x, $cell->_site->y, $cell->_site->x+2, $cell->_site->y+2);
-                }
-
-                $m->drawImage($draw);
-            }
-        }
-
-        return $m;
+        $r = clone $img;
+        $r->resizeImage(1024, 1024, Imagick::FILTER_GAUSSIAN, 1, true);
+        $r->setFormat('jpeg');
+        return $r;
     }
 }
