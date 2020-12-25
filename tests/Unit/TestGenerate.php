@@ -1,14 +1,19 @@
 <?php
 
-namespace SiteOrigin\VoronoiPlaceholder\Tests;
+namespace SiteOrigin\VoronoiPlaceholder\Tests\Unit;
 
-use PHPUnit\Framework\TestCase;
+use Orchestra\Testbench\TestCase;
 use SiteOrigin\VoronoiPlaceholder\Encoder;
 use SiteOrigin\VoronoiPlaceholder\Tests\Traits\DrawsMosaic;
 
 class TestGenerate extends TestCase
 {
     use DrawsMosaic;
+
+    protected function getEnvironmentSetUp($app)
+    {
+        $app['config']->set('view.paths', [__DIR__.'/../views']);
+    }
 
     public function test_generate_reduction_encoder_image()
     {
@@ -37,5 +42,15 @@ class TestGenerate extends TestCase
         $m->blurImage(52,26);
         $m->writeImage(__DIR__ . '/images/out.jpg');
         $this->assertFileExists(__DIR__ . '/images/out.jpg');
+    }
+
+    public function test_create_demo_page()
+    {
+        $r = view('home', [
+            'script' => file_get_contents(realpath(__DIR__.'/../../dist/js/placeholder.js'))
+        ])->render();
+        file_put_contents(__DIR__.'/../html/home.html', $r);
+
+        $this->assertFileExists(__DIR__.'/../html/home.html');
     }
 }

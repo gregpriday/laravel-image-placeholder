@@ -18,7 +18,8 @@
         "spatie/image-optimizer": "^1.3"
     },
     "require-dev": {
-        "phpunit/phpunit": "^8"
+        "phpunit/phpunit": "^8",
+        "orchestra/testbench": "^6.7"
     },
     "autoload": {
         "files": [
